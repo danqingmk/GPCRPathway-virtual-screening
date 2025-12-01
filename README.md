@@ -2,7 +2,7 @@
 ## Installation
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.7+
 - RDKit (for molecular fingerprint generation)
 - PyTorch (for AttentiveFP model)
 
