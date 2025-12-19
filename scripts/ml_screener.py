@@ -59,21 +59,21 @@ def screen_file(file='', sep=',', prop=0.5, model_path=None, smiles_col='Smiles'
     try:
         df = pd.read_csv(file, sep=sep)
     except Exception as e:
-        print(f"Error reading file {file}: {e}")
+        logger.error(f"Error reading file {file}: {e}")
         return
 
     if smiles_col not in df.columns:
-        print(f"Error: '{smiles_col}' column not found in {file}")
-        print(f"Available columns: {list(df.columns)}")
+        logger.error(f"Error: '{smiles_col}' column not found in {file}")
+        logger.info(f"Available columns: {list(df.columns)}")
         return
 
     if not model_path:
-        print("Error: No model provided")
+        logger.error("Error: No model provided")
         return
 
     fp_type = get_fp_type(model_path)
 
-    print(f"Running data_processing for {fp_type} features...")
+    logger.info(f"Running data_processing for {fp_type} features...")
     if fp_type == '2d-3d':
         des_types = ['2d-3d']
     elif fp_type == 'pubchem':
@@ -89,7 +89,7 @@ def screen_file(file='', sep=',', prop=0.5, model_path=None, smiles_col='Smiles'
     # 读取清理后的数据
     pro_file = file.replace('.csv', '_pro.csv')
     if os.path.exists(pro_file):
-        print(f"Reading processed data from: {pro_file}")
+        logger.info(f"Reading processed data from: {pro_file}")
 
         df_pro = pd.read_csv(pro_file, sep=sep)
         try:
@@ -97,7 +97,7 @@ def screen_file(file='', sep=',', prop=0.5, model_path=None, smiles_col='Smiles'
         except:
             df['processed_smiles'] = df[smiles_col].apply(lambda x: canonicalize_smiles(saltremover(str(x))))
     else:
-        print(f"Processed file not found: {pro_file}, using original SMILES with cleanup")
+        logger.info(f"Processed file not found: {pro_file}, using original SMILES with cleanup")
         df['processed_smiles'] = df[smiles_col].apply(lambda x: canonicalize_smiles(saltremover(str(x))))
 
     # 过滤无效SMILES
@@ -106,13 +106,13 @@ def screen_file(file='', sep=',', prop=0.5, model_path=None, smiles_col='Smiles'
     invalid_count = len(df) - len(valid_df)
 
     if invalid_count > 0:
-        print(f"Removed {invalid_count} invalid molecules")
+        logger.info(f"Removed {invalid_count} invalid molecules")
 
     if len(valid_df) == 0:
-        print("No valid molecules to process")
+        logger.warning("No valid molecules to process")
         return
 
-    print(f"Valid molecules for prediction: {len(valid_df)}")
+    logger.info(f"Valid molecules for prediction: {len(valid_df)}")
 
     # 加载模型
     model = joblib.load(model_path)
@@ -153,13 +153,13 @@ def screen_file(file='', sep=',', prop=0.5, model_path=None, smiles_col='Smiles'
                 print(f"Error processing molecule {com} ({smiles}): {e}")
                 continue
 
-    print(f"Total molecules processed: {com}")
-    print(f"Active molecules found: {count}")
+    logger.info(f"Total molecules processed: {com}")
+    logger.info(f"Active molecules found: {count}")
     if com > 0:
         percentage = (count / com) * 100
-        print(f"Screening percentage: {percentage:.2f}%")
+        logger.info(f"Screening percentage: {percentage:.2f}%")
 
-    print(f"Results saved to: {out_file}")
+    logger.info(f"Results saved to: {out_file}")
 
 
 def main():
@@ -196,13 +196,9 @@ def main():
 
         print(f"Found {len(csv_files)} CSV files to process")
 
-        if len(csv_files) == 0:
-            print("No CSV files found in directory")
-            return
-
         # 多进程处理
         if cpus > 1 and len(csv_files) > 1:
-            print(f"Using multiprocessing with {cpus} cores")
+            logger.info(f"Using multiprocessing with {cpus} cores")
 
             params = []
             for csv_file in csv_files:
@@ -231,9 +227,9 @@ def main():
                 try:
                     result.get()
                 except Exception as e:
-                    print(f"Error in multiprocessing: {e}")
+                    logger.error(f"Error in multiprocessing: {e}")
 
-            print("All files processed")
+            logger.info("All files processed")
         else:
             # 顺序处理
             for csv_file in csv_files:
@@ -248,7 +244,7 @@ def main():
                     model_dir=model_dir
                 )
     else:
-        print(f"Error: {file} is neither a file nor a directory")
+        logger.error(f"Error: {file} is neither a file nor a directory")
 
 
 if __name__ == '__main__':
