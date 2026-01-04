@@ -79,9 +79,32 @@ python scripts/run_result.py \
   </tr>
 </table>  
 
+
+## Molecular Screening
+After model training, conduct virtual screening for novel compounds.
+
+```bash
+python scripts/ml_screener.py \
+    --file new_molecules.csv \
+    --model model_save/RF/random_RF_ECFP4_bestModel.pkl \
+    --prop 0.5 \
+    --out_dir ./results
+```  
+
+```bash
+python scripts/dl_screener.py \
+    --file new_molecules.csv \
+    --model model_save/attentivefp/random_cla_attentivefp.pth \
+    --prop 0.5 \
+    --out_dir ./results
+```
+**Note**: The scripts automatically preprocess data and handle different feature types.  
+
+
 ### Logging
 All running logs are output to both the console and log files, containing:  
 - Data processing progress  
 - Model training progress  
 - Hyperparameter optimization progress  
 - Final evaluation progress
+- Screening predictions and results
