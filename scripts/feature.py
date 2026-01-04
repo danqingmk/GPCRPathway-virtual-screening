@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from rdkit.Chem import AllChem
@@ -5,7 +6,21 @@ from rdkit.Chem import AllChem
 
 np.random.seed(43)
 
-def create_des(X, FP_type='ECFP4', model_dir=False):
+def create_des(X, FP_type='ECFP4', model_dir=False, input_file=None):
+    """
+    Generate molecular descriptors/fingerprints
+
+    Parameters:
+    -----------
+    X : list or array
+        SMILES strings
+    FP_type : str
+        Type of fingerprint/descriptor
+    model_dir : str or bool
+        Model directory (for training) or False (for inference)
+    input_file : str
+        Input file path (for inference, required for 2d-3d and pubchem)
+    """
 
     smiles = np.array(X)
 
@@ -32,8 +47,15 @@ def create_des(X, FP_type='ECFP4', model_dir=False):
         X = ecfpMat
 
     elif FP_type == '2d-3d':
-        dataset = str(model_dir).split('/model_save')[0].split('/')[-1]
-        des_file = str(model_dir).split('/model_save')[0] +'/'+dataset+'_23d_adj.csv'
+        if model_dir and model_dir != 'False' and model_dir is not False:
+            dataset = str(model_dir).split('/model_save')[0].split('/')[-1]
+            des_file = str(model_dir).split('/model_save')[0] + '/'+dataset + '_23d_adj.csv'
+        elif input_file:
+            base_name = os.path.splitext(input_file)[0]
+            des_file = base_name + '_23d_adj.csv'
+        else:
+            raise ValueError("For 2d-3d features, need either model_dir (training) or input_file (inference)")
+
         des = pd.read_csv(des_file)
         des = des.set_index('Name')
         des = des.dropna(axis=1)
@@ -49,11 +71,18 @@ def create_des(X, FP_type='ECFP4', model_dir=False):
         X = ecfpMat
 
     elif FP_type == 'pubchem':
-        dataset = str(model_dir).split('/model_save')[0].split('/')[-1]
-        des_file = str(model_dir).split('/model_save')[0] + '/' + dataset + '_pubchem.csv'
+        if model_dir and model_dir != 'False' and model_dir is not False:
+            dataset = str(model_dir).split('/model_save')[0].split('/')[-1]
+            des_file = str(model_dir).split('/model_save')[0] + '/' + dataset + '_pubchem.csv'
+        elif input_file:
+            base_name = os.path.splitext(input_file)[0]
+            des_file = base_name + '_pubchem.csv'
+        else:
+            raise ValueError("For pubchem features, need either model_dir (training) or input_file (inference)")
+
         df = pd.read_csv(des_file)
         # name = file.split('/')[-1].split('.csv')[0]
-        name = dataset
+        name = os.path.basename(input_file).replace('.csv', '') if input_file else dataset
         des = pd.read_csv(des_file)
         des = des.set_index('Name')
         features = len(des.columns)

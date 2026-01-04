@@ -24,7 +24,6 @@ def parse_args():
     parser.add_argument('--smiles_col', default='Smiles', type=str, help='Column name for SMILES')
     parser.add_argument('--cpus', default=1, type=int, help='Number of CPU cores for multiprocessing')
     parser.add_argument('--out_dir', default='./', help='Output directory')
-    parser.add_argument('--model_dir', default=None, help='Base directory for model files (for feature generation)')
     args = parser.parse_args()
     return args
 
@@ -47,10 +46,10 @@ def get_fp_type(model_path):
         raise ValueError(f"Warning: Could not determine feature type from model name: {model_filename}")
 
 
-def screen_file(file='', sep=',', prop=0.5, model_path=None, smiles_col='Smiles', out_dir='./', model_dir=None):
+def screen_file(file='', sep=',', prop=0.5, model_path=None, smiles_col='Smiles', out_dir='./'):
     count = 0
     com = 0
-    start_time = time.time()
+
 
     input_filename = os.path.basename(file)
     output_filename = input_filename.replace('.csv', f'_screen_{prop}.csv')
@@ -115,7 +114,12 @@ def screen_file(file='', sep=',', prop=0.5, model_path=None, smiles_col='Smiles'
     logger.info(f"Valid molecules for prediction: {len(valid_df)}")
 
     # 加载模型
-    model = joblib.load(model_path)
+    try:
+        model = joblib.load(model_path)
+        logger.info(f"Model loaded successfully: {os.path.basename(model_path)}")
+    except Exception as e:
+        logger.error(f"Error loading model: {e}")
+        return
 
     with open(out_file, 'w') as f:
         headers = ['processed_smiles', 'probability', 'active']
@@ -128,7 +132,7 @@ def screen_file(file='', sep=',', prop=0.5, model_path=None, smiles_col='Smiles'
             smiles = row['processed_smiles']
 
             try:
-                features = create_des([smiles], FP_type=fp_type, model_dir=model_dir)
+                features = create_des([smiles], FP_type=fp_type, input_file=file)
 
                 if features is None or len(features) == 0:
                     print(f"Warning: Failed to generate features for molecule {com}")
@@ -165,13 +169,14 @@ def screen_file(file='', sep=',', prop=0.5, model_path=None, smiles_col='Smiles'
 def main():
     args = parse_args()
     file = args.file
-    models = args.models
+    model = args.model
     sep = args.sep
     prop = args.prop
     smiles_col = args.smiles_col
     cpus = args.cpus
     out_dir = args.out_dir
-    model_dir = args.model_dir
+
+    logger.add(os.path.expanduser("../ml_screening.log"))
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -182,10 +187,9 @@ def main():
             file=file,
             sep=sep,
             prop=prop,
-            models=models,
+            model_path=model,
             smiles_col=smiles_col,
-            out_dir=out_dir,
-            model_dir=model_dir
+            out_dir=out_dir
         )
     elif os.path.isdir(file):
 
@@ -205,11 +209,10 @@ def main():
                 param = {
                     'file': csv_file,
                     'sep': sep,
-                    'models': models,
+                    'model_path': model,
                     'prop': prop,
                     'smiles_col': smiles_col,
-                    'out_dir': out_dir,
-                    'model_dir': model_dir
+                    'out_dir': out_dir
                 }
                 params.append(param)
 
@@ -238,10 +241,9 @@ def main():
                     file=csv_file,
                     sep=sep,
                     prop=prop,
-                    models=models,
+                    model_path=model,
                     smiles_col=smiles_col,
-                    out_dir=out_dir,
-                    model_dir=model_dir
+                    out_dir=out_dir
                 )
     else:
         logger.error(f"Error: {file} is neither a file nor a directory")
