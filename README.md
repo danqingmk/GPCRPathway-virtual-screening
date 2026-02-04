@@ -108,3 +108,8 @@ All running logs are output to both the console and log files, containing:
 - Hyperparameter optimization progress  
 - Final evaluation progress
 - Screening predictions and results
+
+### Documentation
+
+For advanced usage, detailed parameter descriptions, and debugging tips, please refer to the full documentation on Read the Docs: [GPCRPathway Documentation](https://gpcrpathway.readthedocs.io/en/latest/)
+
